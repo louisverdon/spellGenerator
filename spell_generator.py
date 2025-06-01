@@ -18,8 +18,8 @@ class SpellGenerator:
             },
             "Myros": {
                 "ㄚ KRA": "Essence de la terre",
-                "ㄌ QUA": "Essence des animaux/hommes",
-                "ㄜ CHA": "Essence de la magie"
+                "ㄌ CHA": "Essence des animaux/hommes",
+                "ㄜ QUA": "Essence de la magie"
             },
             "Malvan": {
                 "ㄢ AO": "Essence du froid",
@@ -180,7 +180,8 @@ class SpellGeneratorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Générateur de Sortilèges")
-        self.root.geometry("1000x700")
+        self.root.geometry("1300x850")
+        self.root.minsize(1200, 700)
         
         # Configure style for better appearance
         style = ttk.Style()
@@ -193,6 +194,7 @@ class SpellGeneratorApp:
         self.currently_editing = None
         self.selected_somatic_runes = [] # Gardé pour le transfert mais l'ordre final est la référence
         self.ordered_final_runes = [] # Nouvelle liste pour l'ordre final
+        self.current_selected_spell = None # Nouveau: garde une référence du sort sélectionné
         
         # Variables pour suivre l'essence et l'incantation sélectionnées
         self.selected_essence_rune = tk.StringVar()
@@ -205,17 +207,23 @@ class SpellGeneratorApp:
         self.selected_incantation_rune.trace_add("write", self.update_final_rune_list)
 
     def create_widgets(self):
-        # Main frame with padding
-        main_frame = ttk.Frame(self.root, padding="20")
+        # Main frame with padding - Keep padding here for outer margins
+        main_frame = ttk.Frame(self.root, padding="10") 
         main_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Use PanedWindow for resizable left/right sections
+        paned_window = ttk.PanedWindow(main_frame, orient=tk.HORIZONTAL)
+        paned_window.pack(fill=tk.BOTH, expand=True)
         
-        # Left frame for spell creation
-        left_frame = ttk.Frame(main_frame)
-        left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
+        # Left frame for spell creation - No pack here, add to PanedWindow
+        # Add some internal padding within the left frame
+        left_frame = ttk.Frame(paned_window, padding="10") 
+        paned_window.add(left_frame, weight=3) # Increased weight for left panel
         
-        # Right frame for spell list
-        right_frame = ttk.Frame(main_frame)
-        right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(10, 0))
+        # Right frame for spell list - No pack here, add to PanedWindow
+        # Add some internal padding within the right frame
+        right_frame = ttk.Frame(paned_window, padding="10") 
+        paned_window.add(right_frame, weight=2) # Add to PanedWindow with weight
         
         # ===== SPELL CREATION SECTION (LEFT FRAME) =====
         title_label = ttk.Label(left_frame, text="Création de Sortilège", font=("Helvetica", 14, "bold"))
@@ -223,7 +231,8 @@ class SpellGeneratorApp:
 
         # --- Scrollable Area Start ---
         scrollable_canvas = tk.Canvas(left_frame, borderwidth=0, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(left_frame, orient="vertical", command=scrollable_canvas.yview)
+        scrollbar_v = ttk.Scrollbar(left_frame, orient="vertical", command=scrollable_canvas.yview)
+        scrollbar_h = ttk.Scrollbar(left_frame, orient="horizontal", command=scrollable_canvas.xview)
         scrollable_frame = ttk.Frame(scrollable_canvas)
 
         scrollable_frame.bind(
@@ -234,50 +243,78 @@ class SpellGeneratorApp:
         )
 
         scrollable_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        scrollable_canvas.configure(yscrollcommand=scrollbar.set)
+        scrollable_canvas.configure(yscrollcommand=scrollbar_v.set, xscrollcommand=scrollbar_h.set)
 
-        scrollbar.pack(side="right", fill="y")
+        scrollbar_v.pack(side="right", fill="y")
+        scrollbar_h.pack(side="bottom", fill="x")
         scrollable_canvas.pack(side="top", fill="both", expand=True)
         # --- Scrollable Area End ---
         
         # Widgets inside the scrollable frame
         inner_frame = ttk.Frame(scrollable_frame, padding=(0, 0, 15, 0))
         inner_frame.pack(fill=tk.BOTH, expand=True)
+        inner_frame.configure(width=600)  # Set minimum width
 
         # Spell name
         ttk.Label(inner_frame, text="Nom du sortilège:").pack(anchor="w", pady=(5, 2))
-        self.name_entry = ttk.Entry(inner_frame, width=40)
+        self.name_entry = ttk.Entry(inner_frame, width=60)
         self.name_entry.pack(fill=tk.X, pady=(0, 10))
         
         # Spell description
         ttk.Label(inner_frame, text="Description:").pack(anchor="w", pady=(5, 2))
-        self.description_text = tk.Text(inner_frame, height=4, width=40, wrap=tk.WORD)
+        self.description_text = tk.Text(inner_frame, height=4, width=60, wrap=tk.WORD)
         self.description_text.pack(fill=tk.X, pady=(0, 10))
         
-        # ===== DEITY TABS =====
+        # ===== ESSENCE RUNES SECTION =====
         ttk.Label(inner_frame, text="Rune d'Essence (obligatoire):").pack(anchor="w", pady=(5, 2))
-        self.essence_notebook = ttk.Notebook(inner_frame)
-        self.essence_notebook.pack(fill=tk.X, pady=(0, 10))
         
-        # Create deity tabs
-        self.essence_vars = {} # Toujours utilisé pour les radiobuttons
-        essence_runes_by_deity = self.generator.get_essence_runes_by_deity()
+        # Remplacer les onglets par un seul frame avec tous les radiobuttons
+        essence_frame = ttk.Frame(inner_frame)
+        essence_frame.pack(fill=tk.X, pady=(0, 10))
         
-        for deity, runes in essence_runes_by_deity.items():
-            deity_frame = ttk.Frame(self.essence_notebook, padding=10)
-            self.essence_notebook.add(deity_frame, text=deity)
-            
-            self.essence_vars[deity] = tk.StringVar() # Var pour ce groupe
-            for i, (rune, desc) in enumerate(runes.items()):
+        # Une seule variable pour toutes les runes d'essence
+        self.essence_var = tk.StringVar()
+        self.essence_var.trace_add("write", lambda *args: self.selected_essence_rune.set(self.essence_var.get()))
+        
+        # Créer un cadre scrollable pour les runes d'essence
+        essence_canvas = tk.Canvas(essence_frame, height=150)
+        essence_scrollbar = ttk.Scrollbar(essence_frame, orient="vertical", command=essence_canvas.yview)
+        essence_scrollable = ttk.Frame(essence_canvas)
+        
+        essence_scrollable.bind(
+            "<Configure>",
+            lambda e: essence_canvas.configure(
+                scrollregion=essence_canvas.bbox("all")
+            )
+        )
+        
+        essence_canvas.create_window((0, 0), window=essence_scrollable, anchor="nw")
+        essence_canvas.configure(yscrollcommand=essence_scrollbar.set)
+        
+        essence_canvas.pack(side="left", fill="both", expand=True)
+        essence_scrollbar.pack(side="right", fill="y")
+        
+        # Ajouter toutes les runes d'essence dans un seul cadre
+        row = 0
+        col = 0
+        max_cols = 2  # Affichage en 2 colonnes
+        
+        for deity, runes in self.generator.get_essence_runes_by_deity().items():
+            for rune, desc in runes.items():
                 rune_text = f"{rune} - {desc}"
                 rb = ttk.Radiobutton(
-                    deity_frame, 
+                    essence_scrollable, 
                     text=rune_text, 
                     value=rune, 
-                    variable=self.essence_vars[deity],
-                    command=lambda r=rune: self.selected_essence_rune.set(r) # Met à jour la variable globale
+                    variable=self.essence_var,
+                    width=30,
                 )
-                rb.pack(anchor="w", pady=2)
+                rb.grid(row=row, column=col, sticky="w", padx=5, pady=2)
+                
+                col += 1
+                if col >= max_cols:
+                    col = 0
+                    row += 1
         
         # ===== INCANTATION SECTION =====
         ttk.Label(inner_frame, text="Rune d'Incantation (optionnelle):").pack(anchor="w", pady=(5, 2))
@@ -373,6 +410,18 @@ class SpellGeneratorApp:
         
         self.spell_listbox.bind('<<ListboxSelect>>', self.display_selected_spell)
         
+        # Bouton de copie du sort
+        copy_button = ttk.Button(right_frame, text="Copier le sort sélectionné", command=self.copy_spell_to_clipboard)
+        copy_button.pack(fill=tk.X, pady=(0, 5))
+        
+        # Bouton de copie des runes seulement
+        copy_runes_button = ttk.Button(right_frame, text="Copier les runes uniquement", command=self.copy_runes_only_to_clipboard)
+        copy_runes_button.pack(fill=tk.X, pady=(0, 5))
+        
+        # Bouton de suppression du sort
+        delete_button = ttk.Button(right_frame, text="Supprimer le sort sélectionné", command=self.delete_spell)
+        delete_button.pack(fill=tk.X, pady=(0, 10))
+        
         # Spell detail frame
         spell_detail_frame = ttk.LabelFrame(right_frame, text="Détails du Sortilège Sélectionné")
         spell_detail_frame.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
@@ -458,9 +507,16 @@ class SpellGeneratorApp:
         rune_full = self.final_order_listbox.get(index)
         rune_key = rune_full.split(" - ")[0]
         
-        # Si c'est l'essence, on ne peut pas la retirer (ou on la remet ? Pour l'instant, on interdit)
-        if rune_key == self.selected_essence_rune.get():
-             messagebox.showwarning("Action Interdite", "La rune d'essence est obligatoire et ne peut pas être retirée de l'ordre final.")
+        # Vérifier si c'est une rune d'essence
+        is_essence = False
+        for deity_runes in self.generator.essence_runes.values():
+            if rune_key in deity_runes:
+                is_essence = True
+                break
+        
+        # Si c'est l'essence, on l'interdit sauf si on désélectionne tout
+        if is_essence:
+             messagebox.showwarning("Action Interdite", "La rune d'essence est obligatoire et ne peut pas être retirée directement. Choisissez plutôt une autre rune d'essence ou effacez toutes les sélections.")
              return
 
         # Si c'est l'incantation, on la retire de l'ordre et on désélectionne le radiobutton
@@ -513,11 +569,11 @@ class SpellGeneratorApp:
         essence = self.selected_essence_rune.get()
         incantation = self.selected_incantation_rune.get()
         
-        # Conserver les somatiques actuelles
-        current_somatics = [r for r in self.ordered_final_runes 
-                            if r not in self.generator.essence_runes 
-                            and r not in self.generator.incantation_runes]
-
+        # Conserver uniquement les runes somatiques et d'incantation
+        # Filtrer toutes les runes d'essence
+        current_runes = [r for r in self.ordered_final_runes 
+                        if not any(r in deity_runes for deity_runes in self.generator.essence_runes.values())]
+        
         new_ordered_list = []
         # Ajouter l'incantation si sélectionnée
         if incantation:
@@ -525,8 +581,10 @@ class SpellGeneratorApp:
         # Ajouter l'essence (toujours présente si sélectionnée)
         if essence:
             new_ordered_list.append(essence)
-        # Ajouter les somatiques conservées
-        new_ordered_list.extend(current_somatics)
+        # Ajouter toutes les runes non-essence conservées
+        for rune in current_runes:
+            if rune != incantation:  # Éviter les doublons d'incantation
+                new_ordered_list.append(rune)
         
         self.ordered_final_runes = new_ordered_list
         
@@ -603,7 +661,7 @@ class SpellGeneratorApp:
              messagebox.showerror("Erreur", "La rune d'essence doit être présente dans l'ordre final.")
              return
 
-        incantation = self.selected_incantation_rune.get() # Peut être ""
+        incantation = self.selected_incantation_rune.get()
         # Les somatiques sont dérivés de ordered_final_runes dans le backend
         somatics = [r for r in self.ordered_final_runes if r in self.generator.somatic_runes]
         
@@ -712,11 +770,8 @@ class SpellGeneratorApp:
         self.description_text.delete("1.0", tk.END)
         
         # Désélectionner tous les radiobuttons Essence
-        for deity, var in self.essence_vars.items():
-            var.set("") # Ceci devrait idéalement désélectionner les radios
+        self.essence_var.set("") # Ceci devrait idéalement désélectionner les radios
         self.selected_essence_rune.set("") # Vider la variable de suivi
-        try: self.essence_notebook.select(0) 
-        except: pass # Ignorer erreurs si pas possible
 
         # Désélectionner Incantation
         self.incantation_var.set("None")
@@ -731,9 +786,6 @@ class SpellGeneratorApp:
 
         # Vider aussi la sélection des somatiques disponibles (bonne pratique)
         self.available_somatic_listbox.selection_clear(0, tk.END)
-
-        # Vider l'affichage des détails du sort créé/modifié en bas à gauche
-        # self.spell_display est géré par update_spell_preview maintenant
 
     # display_spell est renommé et généralisé
     def display_spell_details(self, spell, text_widget):
@@ -772,10 +824,12 @@ class SpellGeneratorApp:
             self.spell_detail_text.config(state="normal")
             self.spell_detail_text.delete("1.0", tk.END)
             self.spell_detail_text.config(state="disabled")
+            self.current_selected_spell = None # Réinitialiser la référence
             return
             
         index = self.spell_listbox.curselection()[0]
         spell = self.generator.spells[index]
+        self.current_selected_spell = spell # Sauvegarder la référence
         
         # --- Afficher détails à droite --- 
         self.display_spell_details(spell, self.spell_detail_text)
@@ -796,20 +850,14 @@ class SpellGeneratorApp:
         self.description_text.delete("1.0", tk.END)
         self.description_text.insert("1.0", spell['description'])
         
-        # Définir l'essence via la variable de suivi et sélectionner le radio/tab
+        # Définir l'essence via la variable de suivi et le radiobutton
         essence = spell.get('essence')
         if essence:
             self.selected_essence_rune.set(essence)
-            # Trouver la deity et mettre à jour le radiobutton correspondant
-            for deity, var in self.essence_vars.items():
-                if essence in self.generator.essence_runes[deity]:
-                    var.set(essence)
-                    try: self.essence_notebook.select(list(self.essence_vars.keys()).index(deity))
-                    except: pass
-                    break
+            self.essence_var.set(essence)
         else:
-             self.selected_essence_rune.set("")
-             for var in self.essence_vars.values(): var.set("")
+            self.selected_essence_rune.set("")
+            self.essence_var.set("")
 
         # Définir l'incantation via la variable de suivi et sélectionner le radio
         incantation = spell.get('incantation')
@@ -825,6 +873,123 @@ class SpellGeneratorApp:
         
         # Mettre à jour l'aperçu basé sur l'ordre chargé
         self.update_spell_preview()
+
+    def copy_spell_to_clipboard(self):
+        """Copie le sort sélectionné dans le presse-papier avec son écriture runique et sa description"""
+        # Utiliser d'abord la référence sauvegardée, puis fallback sur la sélection
+        spell = self.current_selected_spell
+        if not spell:
+            selection = self.spell_listbox.curselection()
+            if not selection:
+                messagebox.showerror("Erreur", "Veuillez sélectionner un sortilège à copier.")
+                return
+            index = selection[0]
+            spell = self.generator.spells[index]
+        
+        # Formater le texte à copier - extraire seulement les symboles runiques
+        rune_symbols = []
+        
+        # Gérer les anciens sorts qui n'ont pas 'ordered_runes'
+        ordered_runes = spell.get('ordered_runes', [])
+        if not ordered_runes:
+            # Fallback pour les anciens sorts : construire à partir des données existantes
+            if spell.get('incantation'):
+                ordered_runes.append(spell['incantation'])
+            if spell.get('essence'):
+                ordered_runes.append(spell['essence'])
+            if spell.get('somatic_runes'):
+                ordered_runes.extend(spell['somatic_runes'])
+        
+        for rune in ordered_runes:
+            # Extraire seulement le symbole runique (la partie avant l'espace)
+            symbol = rune.split()[0] if " " in rune else rune
+            rune_symbols.append(symbol)
+        
+        runes_text = " ".join(rune_symbols)
+        copy_text = f"Nom: {spell['name']}\n"
+        copy_text += f"Runes: {runes_text}\n"
+        copy_text += f"Description: {spell['description']}\n"
+        
+        # Copier dans le presse-papier
+        self.root.clipboard_clear()
+        self.root.clipboard_append(copy_text)
+
+    def copy_runes_only_to_clipboard(self):
+        """Copie uniquement les runes du sort sélectionné dans le presse-papier"""
+        # Utiliser d'abord la référence sauvegardée, puis fallback sur la sélection
+        spell = self.current_selected_spell
+        if not spell:
+            selection = self.spell_listbox.curselection()
+            if not selection:
+                messagebox.showerror("Erreur", "Veuillez sélectionner un sortilège à copier.")
+                return
+            index = selection[0]
+            spell = self.generator.spells[index]
+        
+        # Extraire seulement les symboles runiques
+        rune_symbols = []
+        
+        # Gérer les anciens sorts qui n'ont pas 'ordered_runes'
+        ordered_runes = spell.get('ordered_runes', [])
+        if not ordered_runes:
+            # Fallback pour les anciens sorts : construire à partir des données existantes
+            if spell.get('incantation'):
+                ordered_runes.append(spell['incantation'])
+            if spell.get('essence'):
+                ordered_runes.append(spell['essence'])
+            if spell.get('somatic_runes'):
+                ordered_runes.extend(spell['somatic_runes'])
+        
+        for rune in ordered_runes:
+            # Extraire seulement le symbole runique (la partie avant l'espace)
+            symbol = rune.split()[0] if " " in rune else rune
+            rune_symbols.append(symbol)
+        
+        runes_text = " ".join(rune_symbols)
+        
+        # Copier dans le presse-papier
+        self.root.clipboard_clear()
+        self.root.clipboard_append(runes_text)
+
+    def delete_spell(self):
+        """Supprime le sort sélectionné du grimoire après confirmation"""
+        selection = self.spell_listbox.curselection()
+        if not selection:
+            messagebox.showerror("Erreur", "Veuillez sélectionner un sortilège à supprimer.")
+            return
+            
+        index = selection[0]
+        spell = self.generator.spells[index]
+        
+        # Demander confirmation
+        result = messagebox.askyesno(
+            "Confirmation de suppression", 
+            f"Êtes-vous sûr de vouloir supprimer le sort '{spell['name']}' ?\n\nCette action est irréversible."
+        )
+        
+        if result:
+            # Vérifier si le sort en cours de suppression est celui en cours d'édition
+            if self.currently_editing == index:
+                self.cancel_edit()  # Annuler l'édition
+            elif self.currently_editing is not None and self.currently_editing > index:
+                # Ajuster l'index d'édition si un sort avant celui en édition est supprimé
+                self.currently_editing -= 1
+            
+            # Supprimer le sort
+            del self.generator.spells[index]
+            self.generator.save_spells()
+            
+            # Mettre à jour l'affichage
+            self.refresh_spell_list()
+            self.clear_form()
+            self.edit_button.config(state="disabled")
+            
+            # Vider le panneau de détails
+            self.spell_detail_text.config(state="normal")
+            self.spell_detail_text.delete("1.0", tk.END)
+            self.spell_detail_text.config(state="disabled")
+            
+            messagebox.showinfo("Suppression réussie", f"Le sort '{spell['name']}' a été supprimé du grimoire.")
 
 if __name__ == "__main__":
     root = tk.Tk()

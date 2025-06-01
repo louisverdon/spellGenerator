@@ -23,5 +23,110 @@
     "gestures": [
       "En chuchotant"
     ]
+  },
+  {
+    "name": "counter-spell",
+    "description": "Bloque un sort lancée",
+    "essence": "ㄜ CHA",
+    "incantation": "ㄎ ZI",
+    "somatic_runes": [
+      "ㄘ OZ",
+      "ㄐ EK"
+    ],
+    "ordered_runes": [
+      "ㄜ CHA",
+      "ㄎ ZI",
+      "ㄘ OZ",
+      "ㄐ EK"
+    ],
+    "pronunciation": "CHA-ZI-OZ-EK",
+    "gestures": [
+      "En parlant normalement",
+      "Fermer les yeux (+5%)",
+      "Fermer son poing (+5%)"
+    ]
+  },
+  {
+    "name": "Healing hands",
+    "description": "Soigne la personne touchée d'1 PV",
+    "essence": "ㄊ FÖL",
+    "incantation": null,
+    "somatic_runes": [
+      "ㄘ OZ",
+      "ㄕ SU"
+    ],
+    "ordered_runes": [
+      "ㄘ OZ",
+      "ㄕ SU",
+      "ㄊ FÖL"
+    ],
+    "pronunciation": "OZ-SU-FÖL",
+    "gestures": [
+      "Fermer les yeux (+5%)",
+      "Toucher la cible (+5%)"
+    ]
+  },
+  {
+    "name": "ça jouit",
+    "description": "Provoque du plaisir à la personne touchée",
+    "essence": "ㄛ ZUN",
+    "incantation": "ㄍ TOU",
+    "somatic_runes": [
+      "ㄕ SU",
+      "ㄑ EHR"
+    ],
+    "ordered_runes": [
+      "ㄕ SU",
+      "ㄛ ZUN",
+      "ㄍ TOU",
+      "ㄑ EHR"
+    ],
+    "pronunciation": "SU-ZUN-TOU-EHR",
+    "gestures": [
+      "Toucher la cible (+5%)",
+      "En chuchotant",
+      "Faire un clin d'œil (+5%)"
+    ]
+  },
+  {
+    "name": "Appât",
+    "description": "Améliore l'attirance d'un objet pour les animaux",
+    "essence": "ㄌ CHA",
+    "incantation": "ㄎ ZI",
+    "somatic_runes": [
+      "ㄕ SU"
+    ],
+    "ordered_runes": [
+      "ㄎ ZI",
+      "ㄌ CHA",
+      "ㄕ SU"
+    ],
+    "pronunciation": "ZI-CHA-SU",
+    "gestures": [
+      "En parlant normalement",
+      "Toucher la cible (+5%)"
+    ]
+  },
+  {
+    "name": "Aggrandissement",
+    "description": "Agrandi un animal",
+    "essence": "ㄌ CHA",
+    "incantation": "ㄏ RA",
+    "somatic_runes": [
+      "ㄒ AI",
+      "ㄕ SU"
+    ],
+    "ordered_runes": [
+      "ㄏ RA",
+      "ㄌ CHA",
+      "ㄒ AI",
+      "ㄕ SU"
+    ],
+    "pronunciation": "RA-CHA-AI-SU",
+    "gestures": [
+      "En criant",
+      "Taper dans ses mains (+5%)",
+      "Toucher la cible (+5%)"
+    ]
   }
 ]
