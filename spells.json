@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Boule de feu",
+    "description": "Lance une boule de feu",
+    "essence": "ㄋ POK",
+    "incantation": "ㄏ RA",
+    "somatic_runes": [
+      "ㄓ EY"
+    ],
+    "pronunciation": "RA-POK-EY",
+    "gestures": [
+      "En criant",
+      "Lever les mains aux cieux (+5%)"
+    ]
+  },
+  {
+    "name": "Flamme",
+    "description": "Crée une petite flamme dans sa main",
+    "essence": "ㄋ POK",
+    "incantation": "ㄍ TOU",
+    "somatic_runes": [],
+    "pronunciation": "TOU-POK",
+    "gestures": [
+      "En chuchotant"
+    ]
+  }
+]
