@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Sortilèges Web</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Générateur de Sortilèges</h1>
+        <div class="main-layout">
+            <div class="left-panel">
+                <h2>Créer/Modifier un Sortilège</h2>
+                <form id="spell-form">
+                    <input type="hidden" id="spell-index" value="">
+                    <div>
+                        <label for="spell-name">Nom du sortilège:</label>
+                        <input type="text" id="spell-name" required>
+                    </div>
+                    <div>
+                        <label for="spell-description">Description:</label>
+                        <textarea id="spell-description" rows="3" required></textarea>
+                    </div>
+
+                    <fieldset>
+                        <legend>Rune d'Essence (obligatoire)</legend>
+                        <div id="essence-runes-container" class="rune-group-scrollable">
+                            <!-- Essence runes will be populated by JS -->
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Rune d'Incantation (optionnelle)</legend>
+                        <div id="incantation-runes-container" class="rune-group-horizontal">
+                            <label><input type="radio" name="incantation-rune" value="" data-rune-key="" checked> Aucune (silence)</label>
+                            <!-- Incantation runes will be populated by JS -->
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Runes Somatiques (optionnelles)</legend>
+                        <div class="somatic-layout">
+                            <div class="somatic-available">
+                                <label for="available-somatic-runes">Runes Disponibles:</label>
+                                <select id="available-somatic-runes" size="5">
+                                    <!-- Somatic runes will be populated by JS -->
+                                </select>
+                                <button type="button" id="add-somatic-button">Ajouter ↓</button>
+                            </div>
+                        </div>
+                    </fieldset>
+                    
+                    <fieldset>
+                        <legend>Ordre Final des Runes</legend>
+                        <ul id="final-rune-order" class="rune-list">
+                            <!-- Final rune order will be populated by JS -->
+                        </ul>
+                        <div class="final-order-controls">
+                            <button type="button" id="move-rune-up">↑ Monter</button>
+                            <button type="button" id="move-rune-down">↓ Descendre</button>
+                            <button type="button" id="remove-rune">Retirer</button>
+                        </div>
+                    </fieldset>
+
+                    <div class="action-buttons">
+                        <button type="submit" id="create-spell-button">Créer le Sortilège</button>
+                        <button type="button" id="save-spell-button" style="display:none;">Sauvegarder les Modifications</button>
+                        <button type="button" id="cancel-edit-button" style="display:none;">Annuler</button>
+                    </div>
+                </form>
+
+                <div class="spell-preview">
+                    <h3>Aperçu du Sortilège</h3>
+                    <div id="spell-preview-content">
+                        <p>(Sélectionnez une rune d'essence pour voir l'aperçu)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <h2>Grimoire des Sortilèges</h2>
+                <ul id="spell-list" class="spell-list-grimoire">
+                    <!-- Spell list will be populated by JS -->
+                </ul>
+                
+                <div class="spell-details-grimoire">
+                    <h3>Détails du Sortilège Sélectionné</h3>
+                    <div id="selected-spell-details">
+                        <p>(Sélectionnez un sort pour voir ses détails)</p>
+                    </div>
+                    <div class="grimoire-actions">
+                        <button type="button" id="copy-spell-button" disabled>Copier le Sort</button>
+                        <button type="button" id="copy-runes-button" disabled>Copier les Runes</button>
+                        <button type="button" id="delete-spell-button" disabled>Supprimer le Sort</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data embedded from Flask -->
+    <script id="initial-data" type="application/json">
+    {
+      "essence_runes": {{ essence_runes | tojson | safe }},
+      "incantation_runes": {{ incantation_runes | tojson | safe }},
+      "somatic_runes": {{ somatic_runes | tojson | safe }},
+      "spells": {{ spells | tojson | safe }}
+    }
+    </script>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html> 
